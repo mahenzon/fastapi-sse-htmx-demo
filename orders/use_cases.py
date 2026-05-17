@@ -16,10 +16,10 @@ class CreateOrderUC:
     async def __call__(
         self,
         order_create: OrderCreate,
-        on_order_adance: OnOrderAdance,
+        on_order_advance: OnOrderAdance,
     ) -> Order:
         order = storage.create(order_create)
-        storage.start_progression_task(order.id, on_order_adance)
+        await storage.start_progression_task(order.id, on_order_advance)
         return order
 
 

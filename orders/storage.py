@@ -45,10 +45,10 @@ class OrdersStorage:
             reverse=True,
         )
 
-    def start_progression_task(
+    async def start_progression_task(
         self,
         order_id: OrderID,
-        on_order_adance: OnOrderAdance,
+        on_order_advance: OnOrderAdance,
     ) -> None:
         existing_task = self._progression_tasks.get(order_id)
         if existing_task is not None and existing_task.done():
@@ -57,14 +57,14 @@ class OrdersStorage:
         self._progression_tasks[order_id] = asyncio.create_task(
             self._advance(
                 order_id=order_id,
-                on_order_adance=on_order_adance,
+                on_order_advance=on_order_advance,
             ),
         )
 
     async def _advance(
         self,
         order_id: OrderID,
-        on_order_adance: OnOrderAdance,
+        on_order_advance: OnOrderAdance,
     ) -> None:
         order = self._orders.get(order_id)
         if order is None:
@@ -76,14 +76,14 @@ class OrdersStorage:
             await self._advance_order_status(
                 order_id=order_id,
                 status=status,
-                on_order_adance=on_order_adance,
+                on_order_advance=on_order_advance,
             )
 
     async def _advance_order_status(
         self,
         order_id: OrderID,
         status: OrderStatus,
-        on_order_adance: OnOrderAdance,
+        on_order_advance: OnOrderAdance,
     ) -> None:
         sleep_time = random.randint(3, 7)
         await asyncio.sleep(sleep_time)
@@ -93,7 +93,7 @@ class OrdersStorage:
 
         order.status = status
 
-        await on_order_adance(self, order)
+        await on_order_advance(self, order)
 
     async def subscribe(self, order_id: OrderID) -> EventQueue:
         return await self._pubsub.subscribe(order_id)

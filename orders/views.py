@@ -73,7 +73,7 @@ async def create_order(
 ) -> Order | RedirectResponse:
     order = await create(
         order_create,
-        on_order_adance=on_order_advance,
+        on_order_advance=on_order_advance,
     )
 
     if "text/html" not in request.headers.get("Accept", ""):
