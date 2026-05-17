@@ -4,8 +4,11 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Form
 from fastapi import HTTPException
+from fastapi import Request
+from fastapi.responses import HTMLResponse
 from starlette import status
 
+from misc.templating import templates
 from orders.dependencies import create_order_uc
 from orders.dependencies import get_all_orders_uc
 from orders.dependencies import get_order_uc
@@ -43,6 +46,7 @@ def create_order(
 @router.get(
     "/{order_id}",
     response_model=OrderRead,
+    name="order_detail",
 )
 def read_order(
     order_id: OrderID,
@@ -64,11 +68,43 @@ def read_order(
     "/",
     response_model=list[OrderRead],
     name="orders_list",
+    # Define both media types under the 200 Status Code to build the Swagger dropdown
+    responses={
+        status.HTTP_200_OK: {
+            "description": (
+                "Returns a list of orders. Formats available: JSON array or HTML page."
+            ),
+            "content": {
+                "application/json": {},
+                "text/html": {
+                    "schema": {
+                        "type": "string",
+                        "example": (
+                            "<!DOCTYPE html><html><body>"
+                            "<h1>Orders List</h1>...</body></html>"
+                        ),
+                    },
+                },
+            },
+        },
+    },
 )
 def get_orders(
+    request: Request,
     get_all: Annotated[
         GetAllOrdersUC,
         Depends(get_all_orders_uc),
     ],
-) -> list[Order]:
-    return get_all()
+) -> HTMLResponse | list[Order]:
+    orders = get_all()
+
+    if "text/html" not in request.headers.get("Accept", ""):
+        return orders
+
+    return templates.TemplateResponse(
+        request=request,
+        name="orders/list.html",
+        context={
+            "orders": orders,
+        },
+    )
