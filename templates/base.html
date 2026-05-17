@@ -28,9 +28,10 @@
 <div class="container">
   {% include 'components/navbar.html' %}
   {% block body %}
-  	Main Content
+    Main Content
   {% endblock %}
 </div>
 
+<script src="{{ url_for('static', path='js/theme.js') }}"></script>
 </body>
 </html>
