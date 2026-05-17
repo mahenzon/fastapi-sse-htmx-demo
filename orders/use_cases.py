@@ -9,7 +9,9 @@ class CreateOrderUC:
         self,
         order_create: OrderCreate,
     ) -> Order:
-        return storage.create(order_create)
+        order = storage.create(order_create)
+        storage.start_progression_task(order.id)
+        return order
 
 
 class GetOrderUC:

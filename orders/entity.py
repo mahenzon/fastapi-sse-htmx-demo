@@ -14,6 +14,9 @@ class OrderStatus(StrEnum):
     DELIVERED = "delivered"
 
 
+STATUSES = list(OrderStatus)
+
+
 @dataclass
 class Order:
     id: OrderID
