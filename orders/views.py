@@ -32,7 +32,7 @@ router = APIRouter(
     "/",
     response_model=OrderRead,
 )
-def create_order(
+async def create_order(
     request: Request,
     order_create: Annotated[
         OrderCreate,
@@ -43,7 +43,7 @@ def create_order(
         Depends(create_order_uc),
     ],
 ) -> Order | RedirectResponse:
-    order = create(order_create)
+    order = await create(order_create)
 
     if "text/html" not in request.headers.get("Accept", ""):
         return order
@@ -59,7 +59,7 @@ def create_order(
     response_model=OrderRead,
     name="order_detail",
 )
-def read_order(
+async def read_order(
     request: Request,
     order_id: OrderID,
     get: Annotated[
@@ -67,7 +67,7 @@ def read_order(
         Depends(get_order_uc),
     ],
 ) -> Order:
-    order = get(order_id)
+    order = await get(order_id)
     if order is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -113,14 +113,14 @@ def read_order(
         },
     },
 )
-def get_orders(
+async def get_orders(
     request: Request,
     get_all: Annotated[
         GetAllOrdersUC,
         Depends(get_all_orders_uc),
     ],
 ) -> HTMLResponse | list[Order]:
-    orders = get_all()
+    orders = await get_all()
 
     if "text/html" not in request.headers.get("Accept", ""):
         return orders

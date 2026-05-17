@@ -5,7 +5,7 @@ from orders.storage import storage
 
 
 class CreateOrderUC:
-    def __call__(
+    async def __call__(
         self,
         order_create: OrderCreate,
     ) -> Order:
@@ -13,7 +13,7 @@ class CreateOrderUC:
 
 
 class GetOrderUC:
-    def __call__(
+    async def __call__(
         self,
         order_id: OrderID,
     ) -> Order | None:
@@ -21,5 +21,5 @@ class GetOrderUC:
 
 
 class GetAllOrdersUC:
-    def __call__(self) -> list[Order]:
+    async def __call__(self) -> list[Order]:
         return storage.get_all()
