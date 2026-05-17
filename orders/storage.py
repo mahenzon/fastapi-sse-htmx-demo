@@ -3,17 +3,23 @@ import random
 from operator import attrgetter
 from uuid import uuid4
 
+from fastapi.sse import ServerSentEvent
+
+from misc.pubsub import EventQueue
+from misc.pubsub import PubSub
 from orders.dtos import OrderCreate
 from orders.entity import STATUSES
 from orders.entity import Order
 from orders.entity import OrderID
 from orders.entity import OrderStatus
+from orders.types import OnOrderAdance
 
 
 class OrdersStorage:
     def __init__(self) -> None:
         self._orders = dict[OrderID, Order]()
         self._progression_tasks = dict[OrderID, asyncio.Task[None]]()
+        self._pubsub = PubSub()
 
     @classmethod
     def _new_id(cls) -> OrderID:
@@ -39,14 +45,27 @@ class OrdersStorage:
             reverse=True,
         )
 
-    def start_progression_task(self, order_id: OrderID) -> None:
+    def start_progression_task(
+        self,
+        order_id: OrderID,
+        on_order_adance: OnOrderAdance,
+    ) -> None:
         existing_task = self._progression_tasks.get(order_id)
         if existing_task is not None and existing_task.done():
             return
 
-        self._progression_tasks[order_id] = asyncio.create_task(self._advance(order_id))
+        self._progression_tasks[order_id] = asyncio.create_task(
+            self._advance(
+                order_id=order_id,
+                on_order_adance=on_order_adance,
+            ),
+        )
 
-    async def _advance(self, order_id: OrderID) -> None:
+    async def _advance(
+        self,
+        order_id: OrderID,
+        on_order_adance: OnOrderAdance,
+    ) -> None:
         order = self._orders.get(order_id)
         if order is None:
             return
@@ -54,19 +73,36 @@ class OrdersStorage:
         start_index = STATUSES.index(order.status) + 1
         new_statues = STATUSES[start_index:]
         for status in new_statues:
-            await self._advance_order_status(order_id, status)
+            await self._advance_order_status(
+                order_id=order_id,
+                status=status,
+                on_order_adance=on_order_adance,
+            )
 
     async def _advance_order_status(
         self,
         order_id: OrderID,
         status: OrderStatus,
+        on_order_adance: OnOrderAdance,
     ) -> None:
-        sleep_time = random.randint(3, 10)
+        sleep_time = random.randint(3, 7)
         await asyncio.sleep(sleep_time)
         order = self._orders.get(order_id)
         if order is None:
             return
+
         order.status = status
+
+        await on_order_adance(self, order)
+
+    async def subscribe(self, order_id: OrderID) -> EventQueue:
+        return await self._pubsub.subscribe(order_id)
+
+    def unsubscribe(self, order_id: OrderID, queue: EventQueue) -> None:
+        return self._pubsub.unsubscribe(order_id, queue)
+
+    async def publish(self, order_id: OrderID, message: ServerSentEvent) -> None:
+        await self._pubsub.publish(order_id, message)
 
 
 storage = OrdersStorage()
