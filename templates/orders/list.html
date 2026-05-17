@@ -19,7 +19,14 @@
             <a
               href="{{ url_for('order_detail', order_id=order.id) }}"
             >{{ order.name }}</a>
-            {{ status_badge(order.status) }}
+            <span
+              hx-ext="sse"
+              sse-connect="{{ url_for('order_events', order_id=order.id) }}"
+              sse-swap="{{ sse_event_message }}"
+              sse-close="close"
+            >
+              {{ status_badge(order.status) }}
+            </span>
           </li>
         {% endfor %}
       </ul>
