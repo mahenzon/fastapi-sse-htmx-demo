@@ -8,6 +8,8 @@
 {% block body %}
 	<h1>Orders</h1>
 
+  {% include 'orders/components/create-form.html' %}
+
   {% if orders %}
   	<div class="card">
       <h2>Recent orders</h2>

@@ -5,8 +5,9 @@ from fastapi import Depends
 from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Request
+from fastapi import status
 from fastapi.responses import HTMLResponse
-from starlette import status
+from fastapi.responses import RedirectResponse
 
 from misc.templating import templates
 from orders.dependencies import create_order_uc
@@ -32,6 +33,7 @@ router = APIRouter(
     response_model=OrderRead,
 )
 def create_order(
+    request: Request,
     order_create: Annotated[
         OrderCreate,
         Form(),
@@ -40,8 +42,16 @@ def create_order(
         CreateOrderUC,
         Depends(create_order_uc),
     ],
-) -> Order:
-    return create(order_create)
+) -> Order | RedirectResponse:
+    order = create(order_create)
+
+    if "text/html" not in request.headers.get("Accept", ""):
+        return order
+
+    return RedirectResponse(
+        url=request.url_for("order_detail", order_id=order.id),
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
 
 
 @router.get(
