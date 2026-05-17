@@ -37,3 +37,6 @@ class OrdersStorage:
             key=attrgetter("created_at"),
             reverse=True,
         )
+
+
+storage = OrdersStorage()
