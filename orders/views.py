@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Form
-from fastapi import HTTPException
 from fastapi import Request
 from fastapi import status
 from fastapi.responses import HTMLResponse
@@ -16,17 +15,15 @@ from misc.templating import render_string
 from misc.templating import templates
 from orders.dependencies import create_order_uc
 from orders.dependencies import get_all_orders_uc
-from orders.dependencies import get_order_uc
+from orders.dependencies import get_order_or_404
 from orders.dependencies import order_events_subscription_uc
 from orders.dtos import OrderCreate
 from orders.dtos import OrderRead
 from orders.entity import Order
-from orders.entity import OrderID
 from orders.entity import OrderStatus
 from orders.storage import OrdersStorage
 from orders.use_cases import CreateOrderUC
 from orders.use_cases import GetAllOrdersUC
-from orders.use_cases import GetOrderUC
 from orders.use_cases import OrderEventsSubscriptionUC
 
 router = APIRouter(
@@ -36,6 +33,7 @@ router = APIRouter(
 
 
 ORDER_STATUS_UPDATE_EVENT_NAME = "status"
+ORDER_LIST_STATUS_UPDATE_EVENT_NAME = "list-status"
 
 
 async def on_order_advance(
@@ -55,9 +53,21 @@ async def on_order_advance(
         ),
     )
 
+    new_status_badge = render_string(
+        "orders/components/status-badge.html",
+        order=order,
+    )
+    await storage.publish(
+        order_id=order.id,
+        message=ServerSentEvent(
+            event=ORDER_LIST_STATUS_UPDATE_EVENT_NAME,
+            raw_data=new_status_badge,
+        ),
+    )
+
 
 @router.post(
-    "/",
+    "",
     response_model=OrderRead,
 )
 async def create_order(
@@ -92,18 +102,11 @@ async def create_order(
 )
 async def read_order(
     request: Request,
-    order_id: OrderID,
-    get: Annotated[
-        GetOrderUC,
-        Depends(get_order_uc),
+    order: Annotated[
+        Order,
+        Depends(get_order_or_404),
     ],
 ) -> Order:
-    order = await get(order_id)
-    if order is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Order {order_id!r} not found!",
-        )
     if "text/html" not in request.headers.get("Accept", ""):
         return order
 
@@ -121,7 +124,7 @@ async def read_order(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[OrderRead],
     name="orders_list",
     # Define both media types under the 200 Status Code to build the Swagger dropdown
@@ -162,6 +165,7 @@ async def get_orders(
         name="orders/list.html",
         context={
             "orders": orders,
+            "sse_event_message": ORDER_LIST_STATUS_UPDATE_EVENT_NAME,
         },
     )
 
@@ -172,21 +176,14 @@ async def get_orders(
     name="order_events",
 )
 async def order_events(
-    order_id: OrderID,
-    get: Annotated[
-        GetOrderUC,
-        Depends(get_order_uc),
+    order: Annotated[
+        Order,
+        Depends(get_order_or_404),
     ],
     event_stream: Annotated[
         OrderEventsSubscriptionUC,
         Depends(order_events_subscription_uc),
     ],
 ) -> AsyncGenerator[ServerSentEvent]:
-    order = await get(order_id)
-    if order is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Order {order_id!r} not found!",
-        )
     async for event in event_stream(order.id):
         yield event
