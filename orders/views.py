@@ -16,6 +16,7 @@ from orders.dtos import OrderCreate
 from orders.dtos import OrderRead
 from orders.entity import Order
 from orders.entity import OrderID
+from orders.entity import OrderStatus
 from orders.use_cases import CreateOrderUC
 from orders.use_cases import GetAllOrdersUC
 from orders.use_cases import GetOrderUC
@@ -49,6 +50,7 @@ def create_order(
     name="order_detail",
 )
 def read_order(
+    request: Request,
     order_id: OrderID,
     get: Annotated[
         GetOrderUC,
@@ -56,11 +58,23 @@ def read_order(
     ],
 ) -> Order:
     order = get(order_id)
-    if order is not None:
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order {order_id!r} not found!",
+        )
+    if "text/html" not in request.headers.get("Accept", ""):
         return order
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Order {order_id!r} not found!",
+
+    context = {
+        "order": order,
+        "order_statuses": [str(value) for value in OrderStatus],
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="orders/details.html",
+        context=context,
     )
 
 

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'orders/macros/status.html' import status_badge %}
 
 {% block title %}
 	Orders - SSE + HTMX Demo
@@ -16,9 +17,7 @@
             <a
               href="{{ url_for('order_detail', order_id=order.id) }}"
             >{{ order.name }}</a>
-            <span class="status-badge status-{{ order.status }}">
-              {{ order.status }}
-            </span>
+            {{ status_badge(order.status) }}
           </li>
         {% endfor %}
       </ul>
