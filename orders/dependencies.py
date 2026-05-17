@@ -1,5 +1,13 @@
-from fastapi import Request
+from typing import Annotated
 
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Path
+from fastapi import Request
+from fastapi import status
+
+from orders.entity import Order
+from orders.entity import OrderID
 from orders.use_cases import CreateOrderUC
 from orders.use_cases import GetAllOrdersUC
 from orders.use_cases import GetOrderUC
@@ -22,3 +30,22 @@ def order_events_subscription_uc(
     request: Request,
 ) -> OrderEventsSubscriptionUC:
     return OrderEventsSubscriptionUC(request=request)
+
+
+async def get_order_or_404(
+    order_id: Annotated[
+        OrderID,
+        Path(),
+    ],
+    get: Annotated[
+        GetOrderUC,
+        Depends(get_order_uc),
+    ],
+) -> Order:
+    order = await get(order_id)
+    if order is not None:
+        return order
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Order {order_id!r} not found!",
+    )
