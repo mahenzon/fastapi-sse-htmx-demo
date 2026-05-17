@@ -19,6 +19,6 @@ class Order:
     id: OrderID
     name: str
     status: OrderStatus
-    created_at: str = field(
+    created_at: datetime = field(
         default_factory=lambda: datetime.now(UTC),
     )
