@@ -4,6 +4,8 @@ from datetime import UTC
 from datetime import datetime
 from enum import StrEnum
 
+type OrderID = str
+
 
 class OrderStatus(StrEnum):
     PENDING = "pending"
@@ -14,7 +16,7 @@ class OrderStatus(StrEnum):
 
 @dataclass
 class Order:
-    id: str
+    id: OrderID
     name: str
     status: str
     created_at: str = field(
