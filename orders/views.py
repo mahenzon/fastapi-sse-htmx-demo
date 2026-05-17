@@ -63,6 +63,7 @@ def read_order(
 @router.get(
     "/",
     response_model=list[OrderRead],
+    name="orders_list",
 )
 def get_orders(
     get_all: Annotated[
