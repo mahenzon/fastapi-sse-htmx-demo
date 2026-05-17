@@ -18,7 +18,7 @@ class OrderStatus(StrEnum):
 class Order:
     id: OrderID
     name: str
-    status: str
+    status: OrderStatus
     created_at: str = field(
         default_factory=lambda: datetime.now(UTC),
     )
