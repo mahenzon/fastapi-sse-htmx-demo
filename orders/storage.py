@@ -19,11 +19,11 @@ class OrdersStorage:
         # return secrets.token_urlsafe(6)  # noqa: ERA001
         return uuid4().hex[:6]
 
-    def create(self, order: OrderCreate) -> Order:
+    def create(self, order_create: OrderCreate) -> Order:
         order = Order(
             id=self._new_id(),
             status=OrderStatus.PENDING,
-            **order.model_dump(),
+            **order_create.model_dump(),
         )
         self._orders[order.id] = order
         return order
