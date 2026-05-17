@@ -1,15 +1,29 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import BASE_DIR
+from misc.shutdown import shutdown
 from misc.templating import templates
 from orders.views import router
 
 STATIC_DIR = BASE_DIR / "static"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator:
+    shutdown.install_shutdown_handlers()
+    yield
+    shutdown.request_shutdown()
+
+
 app = FastAPI(
     title="Orders API: SSE + HTMX Demo",
+    lifespan=lifespan,
 )
 app.mount(
     "/static",

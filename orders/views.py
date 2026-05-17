@@ -31,7 +31,6 @@ router = APIRouter(
     prefix="/orders",
 )
 
-
 ORDER_STATUS_UPDATE_EVENT_NAME = "status"
 ORDER_LIST_STATUS_UPDATE_EVENT_NAME = "list-status"
 

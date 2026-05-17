@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from fastapi import Request
 from fastapi.sse import ServerSentEvent
 
+from misc.shutdown import shutdown
 from orders.dtos import OrderCreate
 from orders.entity import Order
 from orders.entity import OrderID
@@ -42,6 +43,8 @@ class OrderEventsSubscriptionUC:
 
     async def wait_for_event[T](self, queue: asyncio.Queue[T]) -> T | None:
         while True:
+            if shutdown.is_shutting_down:
+                return None
             if await self.request.is_disconnected():
                 return None
             try:
@@ -63,10 +66,9 @@ class OrderEventsSubscriptionUC:
             return
 
         queue = await storage.subscribe(order_id)
-        # TODO: Handle request disconnect
         try:
             while True:
-                if await self.request.is_disconnected():
+                if shutdown.is_shutting_down or await self.request.is_disconnected():
                     yield ServerSentEvent(event="close")
                     return
 
