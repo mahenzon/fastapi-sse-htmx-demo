@@ -24,6 +24,37 @@ Open [http://127.0.0.1:8000/orders](http://127.0.0.1:8000/orders), create an ord
 
 API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
+### HTTPS + HTTP/2 (recommended for SSE)
+
+On **HTTP/1.1**, browsers cap concurrent connections per host (often six). A long-lived SSE stream uses one slot; with the list page, detail page, assets, and API calls, extra requests (including new SSE connections) can queue and look “stuck.” **HTTPS with HTTP/2** multiplexes many streams on one connection, so SSE stays responsive during local dev.
+
+Install [mkcert](https://github.com/FiloSottile/mkcert) once (`brew install mkcert` on macOS), then trust its local CA:
+
+```bash
+mkcert -install
+```
+
+Generate certs (creates `certs/`; keep these local, do not commit):
+
+```bash
+mkdir -p certs
+mkcert \
+  -cert-file certs/localhost.pem \
+  -key-file certs/localhost-key.pem \
+  localhost 127.0.0.1 ::1
+```
+
+Run with [Hypercorn](https://hypercorn.readthedocs.io/) (TLS enables HTTP/2):
+
+```bash
+uv run hypercorn app:app \
+  --bind 127.0.0.1:8443 \
+  --certfile certs/localhost.pem \
+  --keyfile certs/localhost-key.pem
+```
+
+Open [https://127.0.0.1:8443/orders](https://127.0.0.1:8443/orders) (accept the mkcert-issued certificate if prompted). API docs: [https://127.0.0.1:8443/docs](https://127.0.0.1:8443/docs)
+
 ## Endpoints
 
 | Path | Description |
